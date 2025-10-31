@@ -3,8 +3,13 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
 export async function OPTIONS() {
-  // Allow preflight from browsers (harmless for same-origin) so POST doesn't get blocked.
-  return NextResponse.json({ ok: true })
+  // Allow preflight from browsers so POST with application/json doesn't get blocked.
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+  return new NextResponse(null, { status: 204, headers })
 }
 
 export async function POST(req: Request) {
@@ -52,9 +57,20 @@ export async function POST(req: Request) {
       maxAge: 60 * 60 * 24 * 30, // refresh token longer
     })
 
-    return NextResponse.json({ ok: true })
+    const responseHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    }
+
+    return NextResponse.json({ ok: true }, { headers: responseHeaders })
   } catch (err) {
     console.error('set-cookie error', err)
-    return NextResponse.json({ error: 'server error' }, { status: 500 })
+    const responseHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    }
+    return NextResponse.json({ error: 'server error' }, { status: 500, headers: responseHeaders })
   }
 }
