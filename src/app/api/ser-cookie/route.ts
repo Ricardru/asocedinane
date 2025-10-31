@@ -2,7 +2,13 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
+export async function OPTIONS() {
+  // Allow preflight from browsers (harmless for same-origin) so POST doesn't get blocked.
+  return NextResponse.json({ ok: true })
+}
+
 export async function POST(req: Request) {
+  console.log('[api/ser-cookie] incoming method POST')
   try {
     const body = await req.json()
     const { access_token, refresh_token, expires_at } = body
