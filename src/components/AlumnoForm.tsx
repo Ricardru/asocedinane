@@ -48,7 +48,11 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
       // attach public urls if foto_path present (best-effort)
       for (const p of persons) {
         try {
-          if (p.foto_path) p.foto_public_url = supabase.storage.from('personas-photos').getPublicUrl(p.foto_path).data.publicUrl
+          if (p.foto_path) {
+            const publicUrl = supabase.storage.from('personas-photos').getPublicUrl(p.foto_path).data.publicUrl
+            // p may have a strict type from the DB result; cast to any to attach a UI-only field
+            ;(p as any).foto_public_url = publicUrl
+          }
         } catch (e) { /* ignore */ }
       }
 
