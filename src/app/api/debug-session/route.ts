@@ -5,7 +5,22 @@ import { createServerSupabaseClientForActions } from '@/lib/supabase'
 export async function GET() {
   try {
     // cookies() can be async in some Next.js runtimes; await to be safe
-    const cookieStore = await cookies()
+    const cookieStore: any = await cookies()
+
+    // Quick diagnostics about cookieStore shape to debug runtime mismatch
+    const cookieStoreInfo = {
+      hasGet: typeof cookieStore.get,
+      hasSet: typeof cookieStore.set,
+      getResultType: null as string | null,
+    }
+
+    try {
+      const r = cookieStore.get && cookieStore.get('sb-access-token')
+      cookieStoreInfo.getResultType = r ? typeof r : null
+    } catch (e) {
+      cookieStoreInfo.getResultType = 'error'
+    }
+
     const supabase = createServerSupabaseClientForActions(cookieStore)
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -26,6 +41,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
+      cookieStoreInfo,
       user: userData?.user ? { id: userData.user.id, email: userData.user.email } : null,
       sampleCount,
       sampleError,
