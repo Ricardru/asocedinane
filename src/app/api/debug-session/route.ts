@@ -31,14 +31,15 @@ export async function GET(request: Request) {
       cookieStoreInfo.getResultType = 'error'
     }
 
-    const supabase = createServerSupabaseClientForActions(cookieStore)
+  const supabase = createServerSupabaseClientForActions(cookieStore)
+  const deployedSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || null
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
     if (userError) {
       // Include cookie diagnostics even when getUser fails so we can see what cookies
       // the server received and why the auth session is missing.
       return NextResponse.json(
-        { ok: false, error: 'getUser failed', detail: userError.message, cookieStoreInfo },
+        { ok: false, error: 'getUser failed', detail: userError.message, cookieStoreInfo, deployedSha },
         { status: 500 },
       )
     }
@@ -64,12 +65,14 @@ export async function GET(request: Request) {
       ok: true,
       cookieStoreInfo,
       envInfo,
+      deployedSha,
       user: userData?.user ? { id: userData.user.id, email: userData.user.email } : null,
       sampleCount,
       sampleError,
     })
   } catch (err) {
     console.error('debug-session error', err)
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 })
+    const deployedSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || null
+    return NextResponse.json({ ok: false, error: String(err), deployedSha }, { status: 500 })
   }
 }
