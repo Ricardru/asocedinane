@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Compra-Venta App (Next.js + Supabase)
 
-## Getting Started
+Aplicación Next.js con Supabase preparada para correr de forma local y desplegar desde GitHub (Vercel recomendado). Este documento resume configuración de entorno, ejecución local y opciones de despliegue.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 18+ (recomendado LTS)
+- Cuenta de Supabase (con proyecto y credenciales)
+- Variables de entorno configuradas
+
+## Variables de entorno
+
+Copia `.env.example` a `.env.local` y completa:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Cliente (se expone en el navegador)
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+
+# Servidor (NO se expone en el navegador)
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+En producción (Vercel/Render/etc.), configura estas variables en el panel de la plataforma (Environment Variables/Secrets).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ejecutar en local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+cd compra-venta-app
+npm install
+npm run dev
+# abre http://localhost:3000
+```
 
-## Learn More
+## Build y ejecución en modo producción local
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+npm run build
+npm run start
+# abre http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Despliegue recomendado (Vercel con GitHub)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Sube el repo a GitHub.
+2. En Vercel, crea un proyecto y conecta el repo.
+3. En “Root Directory” indica: `compra-venta-app`.
+4. Añade variables de entorno en Vercel (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY).
+5. Cada push a `main` generará un deploy automáticamente (Preview en PRs y Production en main).
 
-## Deploy on Vercel
+## CI (GitHub Actions)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Este repo incluye un workflow de CI que verifica build de la app. Si quieres publicar a GitHub Pages, ten en cuenta que Next.js con SSR/APIs no es soportado en Pages (sólo sitios estáticos vía `next export`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notas de seguridad
+
+- No subas `.env*` al repositorio.
+- La clave `SUPABASE_SERVICE_ROLE_KEY` es sólo para servidor (rutas API/CI). Nunca llamarla desde el navegador.
+- En este proyecto, el cliente del navegador usa únicamente la `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+## Problemas comunes
+
+- Si no carga imágenes de Supabase Storage y tu bucket es privado, el frontend intenta usar signed URLs como fallback en áreas críticas (e.g., Alumnos). Verifica que las políticas RLS/Storage estén correctamente configuradas.
+- Si el dev server no inicia, revisa la consola de PowerShell y asegura Node 18+.

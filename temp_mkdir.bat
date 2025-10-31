@@ -1,0 +1,1 @@
+mkdir d:\RI\DESARROLLO\compra_venta\compra-venta-app\src\app\dashboard\becas
