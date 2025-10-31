@@ -28,13 +28,13 @@ export default function LoginPage() {
         password,
       })
       console.log('[login] signInWithPassword result', { data, error })
-      
+
       // después de const { data, error } = await supabase.auth.signInWithPassword(...)
       if (!error) {
         const session = data?.session
         // enviar tokens al servidor para crear cookies httpOnly
         try {
-          await fetch('/api/auth/set-cookie', {
+          const res = await fetch('/api/ser-cookie', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -43,39 +43,36 @@ export default function LoginPage() {
               expires_at: session?.expires_at, // si viene
             }),
           })
+
+          if (!res.ok) {
+            console.warn('[login] set-cookie request returned', res.status)
+          }
         } catch (e) {
           console.error('set-cookie request failed', e)
-          // no abortar, seguir — pero en producción recomendamos avisar
+          // continuar sin bloquear la UX; en producción mostrar aviso si es crítico
         }
-
-        // ahora redirigir con router.push como ya tienes
-        router.push('/dashboard')
       }
 
       if (error) {
         console.error('[login] supabase error', error)
         setError(error.message)
       } else {
-        // Esperar un poco para que las cookies se establezcan
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Esperar un poco para que las cookies se establezcan en el servidor
+        await new Promise(resolve => setTimeout(resolve, 150))
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
         console.log('[login] getSession', { sessionData, sessionError })
 
         if (sessionData?.session) {
-          // Mostrar mensaje de éxito y redirigir después de un delay
-          setError('') // Limpiar errores
+          // Sesión establecida correctamente
+          setError('')
           setLoading(false)
           console.log('[login] session established, redirecting')
-
-          // Use router.push to preserve SPA behavior
           router.push('/dashboard')
-
-          return // Salir de la función para evitar setLoading(false)
-        } else {
-          console.warn('[login] no session after sign in')
-          setError('Error al establecer la sesión. Intenta nuevamente.')
+          return
         }
+        console.warn('[login] no session after sign in')
+        setError('Error al establecer la sesión. Intenta nuevamente.')
       }
     } catch (err) {
       console.error('[login] unexpected error', err)

@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     // Aquí uso maxAge de 1 día si no viene expires_at (ajusta según tu necesidad)
     const maxAge = expires_at ? Math.max(0, Number(expires_at) - Math.floor(Date.now()/1000)) : 60 * 60 * 24
 
-    cookies().set({
+    // `cookies()` can be async in some Next.js runtimes; get the store first
+    const cookieStore = await cookies()
+
+    cookieStore.set({
       name: 'sb-access-token',
       value: access_token,
       path: '/',
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
       maxAge,
     })
 
-    cookies().set({
+    cookieStore.set({
       name: 'sb-refresh-token',
       value: refresh_token,
       path: '/',
