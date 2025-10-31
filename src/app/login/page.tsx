@@ -14,41 +14,48 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('[login] submit', { email })
     setLoading(true)
     setError('')
 
     try {
       // Hacer logout primero para limpiar cualquier sesión anterior
+      console.log('[login] signing out previous session')
       await supabase.auth.signOut()
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+      console.log('[login] signInWithPassword result', { data, error })
 
       if (error) {
+        console.error('[login] supabase error', error)
         setError(error.message)
       } else {
         // Esperar un poco para que las cookies se establezcan
         await new Promise(resolve => setTimeout(resolve, 100))
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        console.log('[login] getSession', { sessionData, sessionError })
 
         if (sessionData?.session) {
           // Mostrar mensaje de éxito y redirigir después de un delay
           setError('') // Limpiar errores
           setLoading(false)
+          console.log('[login] session established, redirecting')
 
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 500)
+          // Use router.push to preserve SPA behavior
+          router.push('/dashboard')
 
           return // Salir de la función para evitar setLoading(false)
         } else {
+          console.warn('[login] no session after sign in')
           setError('Error al establecer la sesión. Intenta nuevamente.')
         }
       }
     } catch (err) {
+      console.error('[login] unexpected error', err)
       setError('Error inesperado al iniciar sesión')
     }
 
@@ -82,6 +89,7 @@ export default function LoginPage() {
                 name="email"
                 type="email"
                 required
+                autoComplete="username"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-t-md bg-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Correo electrónico"
                 value={email}
@@ -97,6 +105,7 @@ export default function LoginPage() {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-b-md bg-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Contraseña"
                 value={password}
