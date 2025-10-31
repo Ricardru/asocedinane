@@ -25,7 +25,12 @@ export async function GET() {
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
     if (userError) {
-      return NextResponse.json({ ok: false, error: 'getUser failed', detail: userError.message }, { status: 500 })
+      // Include cookie diagnostics even when getUser fails so we can see what cookies
+      // the server received and why the auth session is missing.
+      return NextResponse.json(
+        { ok: false, error: 'getUser failed', detail: userError.message, cookieStoreInfo },
+        { status: 500 },
+      )
     }
 
     // small DB check (non-sensitive): count personas rows (limit 1)
@@ -39,9 +44,16 @@ export async function GET() {
       sampleError = String(e)
     }
 
+    // Report presence of Supabase env variables (booleans only) to help debug
+    const envInfo = {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    }
+
     return NextResponse.json({
       ok: true,
       cookieStoreInfo,
+      envInfo,
       user: userData?.user ? { id: userData.user.id, email: userData.user.email } : null,
       sampleCount,
       sampleError,
