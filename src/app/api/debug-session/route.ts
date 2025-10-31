@@ -2,10 +2,17 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServerSupabaseClientForActions } from '@/lib/supabase'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // cookies() can be async in some Next.js runtimes; await to be safe
     const cookieStore: any = await cookies()
+
+    // Read raw Cookie header (if present) to diagnose whether cookies arrive
+    const rawCookieHeader = request.headers.get('cookie') || null
+    // Redact token values (do not expose actual tokens). Replace any sb-* cookie value with '***'
+    const redactedCookieHeader = rawCookieHeader
+      ? rawCookieHeader.replace(/(sb-[^=]+=)([^;\s]+)/g, "$1***")
+      : null
 
     // Quick diagnostics about cookieStore shape to debug runtime mismatch
     const cookieStoreInfo = {
@@ -13,6 +20,9 @@ export async function GET() {
       hasSet: typeof cookieStore.set,
       getResultType: null as string | null,
     }
+
+    // include the redacted raw header for extra visibility
+    if (redactedCookieHeader) (cookieStoreInfo as any).rawCookieHeader = redactedCookieHeader
 
     try {
       const r = cookieStore.get && cookieStore.get('sb-access-token')
