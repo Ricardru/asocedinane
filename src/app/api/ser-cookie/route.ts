@@ -4,8 +4,9 @@ import { cookies } from 'next/headers'
 
 export async function OPTIONS() {
   // Allow preflight from browsers so POST with application/json doesn't get blocked.
+  const origin = process.env.NEXT_PUBLIC_APP_URL || '*'
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   }
@@ -13,7 +14,6 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request) {
-  console.log('[api/ser-cookie] incoming method POST')
   try {
     const body = await req.json()
     const { access_token, refresh_token, expires_at } = body
@@ -57,8 +57,9 @@ export async function POST(req: Request) {
       maxAge: 60 * 60 * 24 * 30, // refresh token longer
     })
 
+    const origin = process.env.NEXT_PUBLIC_APP_URL || '*'
     const responseHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     }
@@ -66,21 +67,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true }, { headers: responseHeaders })
   } catch (err) {
     console.error('set-cookie error', err)
+    const origin = process.env.NEXT_PUBLIC_APP_URL || '*'
     const responseHeaders = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     }
     return NextResponse.json({ error: 'server error' }, { status: 500, headers: responseHeaders })
   }
-}
-
-// Temporary GET handler for debugging from browser (no preflight).
-export async function GET() {
-  console.log('[api/ser-cookie] incoming method GET')
-  const responseHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  }
-  return NextResponse.json({ ok: true, method: 'GET' }, { headers: responseHeaders })
 }
