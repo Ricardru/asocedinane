@@ -28,6 +28,29 @@ export default function LoginPage() {
         password,
       })
       console.log('[login] signInWithPassword result', { data, error })
+      
+      // después de const { data, error } = await supabase.auth.signInWithPassword(...)
+      if (!error) {
+        const session = data?.session
+        // enviar tokens al servidor para crear cookies httpOnly
+        try {
+          await fetch('/api/auth/set-cookie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: session?.access_token,
+              refresh_token: session?.refresh_token,
+              expires_at: session?.expires_at, // si viene
+            }),
+          })
+        } catch (e) {
+          console.error('set-cookie request failed', e)
+          // no abortar, seguir — pero en producción recomendamos avisar
+        }
+
+        // ahora redirigir con router.push como ya tienes
+        router.push('/dashboard')
+      }
 
       if (error) {
         console.error('[login] supabase error', error)
