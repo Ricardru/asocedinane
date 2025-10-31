@@ -37,6 +37,8 @@ export default function LoginPage() {
           const res = await fetch('/api/ser-cookie', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            // include credentials so browser will accept httpOnly Set-Cookie responses
+            credentials: 'include',
             body: JSON.stringify({
               access_token: session?.access_token,
               refresh_token: session?.refresh_token,
