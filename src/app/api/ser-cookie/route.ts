@@ -74,3 +74,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'server error' }, { status: 500, headers: responseHeaders })
   }
 }
+
+// Temporary GET handler for debugging from browser (no preflight).
+export async function GET() {
+  console.log('[api/ser-cookie] incoming method GET')
+  const responseHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  }
+  return NextResponse.json({ ok: true, method: 'GET' }, { headers: responseHeaders })
+}
