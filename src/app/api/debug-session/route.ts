@@ -4,7 +4,8 @@ import { createServerSupabaseClientForActions } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
+    // cookies() can be async in some Next.js runtimes; await to be safe
+    const cookieStore = await cookies()
     const supabase = createServerSupabaseClientForActions(cookieStore)
 
     const { data: userData, error: userError } = await supabase.auth.getUser()
