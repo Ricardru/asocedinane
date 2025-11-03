@@ -19,69 +19,54 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // Hacer logout primero para limpiar cualquier sesión anterior
-      console.log('[login] signing out previous session')
+      // Limpiar cualquier sesión anterior
+      console.log('[login] clearing previous session')
       await supabase.auth.signOut()
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Intentar iniciar sesión
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      console.log('[login] signInWithPassword result', { data, error })
+      
+      console.log('[login] signInWithPassword result', { 
+        hasSession: !!data?.session, 
+        hasUser: !!data?.user,
+        error: signInError 
+      })
 
-      // después de const { data, error } = await supabase.auth.signInWithPassword(...)
-      if (!error) {
-        const session = data?.session
-        // enviar tokens al servidor para crear cookies httpOnly
-        try {
-          const res = await fetch('/api/ser-cookie', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // include credentials so browser will accept httpOnly Set-Cookie responses
-            credentials: 'include',
-            body: JSON.stringify({
-              access_token: session?.access_token,
-              refresh_token: session?.refresh_token,
-              expires_at: session?.expires_at, // si viene
-            }),
-          })
-
-          if (!res.ok) {
-            console.warn('[login] set-cookie request returned', res.status)
-          }
-        } catch (e) {
-          console.error('set-cookie request failed', e)
-          // continuar sin bloquear la UX; en producción mostrar aviso si es crítico
-        }
+      if (signInError) {
+        console.error('[login] supabase error', signInError)
+        setError(signInError.message)
+        setLoading(false)
+        return
       }
 
-      if (error) {
-        console.error('[login] supabase error', error)
-        setError(error.message)
-      } else {
-        // Esperar un poco para que las cookies se establezcan en el servidor
-        await new Promise(resolve => setTimeout(resolve, 150))
-
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-        console.log('[login] getSession', { sessionData, sessionError })
-
-        if (sessionData?.session) {
-          // Sesión establecida correctamente
-          setError('')
-          setLoading(false)
-          console.log('[login] session established, redirecting')
-          router.push('/dashboard')
-          return
-        }
-        console.warn('[login] no session after sign in')
-        setError('Error al establecer la sesión. Intenta nuevamente.')
+      if (!data?.session) {
+        console.error('[login] no session returned')
+        setError('No se pudo establecer la sesión')
+        setLoading(false)
+        return
       }
+
+      // ✅ Supabase ya guardó las cookies automáticamente
+      console.log('[login] session established successfully')
+      
+      // Refrescar el router para que el middleware detecte las cookies
+      router.refresh()
+      
+      // Pequeña pausa para asegurar que las cookies se escribieron
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Redirigir al dashboard
+      console.log('[login] redirecting to dashboard')
+      router.push('/dashboard')
+      
     } catch (err) {
       console.error('[login] unexpected error', err)
-      setError('Error inesperado al iniciar sesión')
+      setError('Error inesperado al iniciar sesión. Por favor intenta de nuevo.')
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (
@@ -153,14 +138,16 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-600 dark:text-red-400 text-sm text-center">{error}</div>
+            <div className="text-red-600 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-3 rounded">
+              {error}
+            </div>
           )}
 
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Iniciando...' : 'Iniciar Sesión'}
             </button>
