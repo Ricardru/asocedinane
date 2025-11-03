@@ -23,8 +23,38 @@ export async function POST(request: Request) {
       },
     } as any)
 
-    // Opcional: redirigir al usuario a una página de tu app después de reset
-    const redirectTo = process.env.NEXT_PUBLIC_PASSWORD_RESET_REDIRECT || undefined
+    // Allow an optional redirectTo in the request body, but validate origin
+    const requestedRedirect = body?.redirectTo
+    const envRedirect = process.env.NEXT_PUBLIC_PASSWORD_RESET_REDIRECT
+
+    // Build allowed origins: prefer NEXT_PUBLIC_APP_URL, fallback to envRedirect origin and known dev hosts
+    const allowedOrigins = new Set<string>()
+    if (process.env.NEXT_PUBLIC_APP_URL) {
+      try { allowedOrigins.add(new URL(process.env.NEXT_PUBLIC_APP_URL).origin) } catch (e) {}
+    }
+    if (envRedirect) {
+      try { allowedOrigins.add(new URL(envRedirect).origin) } catch (e) {}
+    }
+    // Common defaults (production and localhost for dev)
+    allowedOrigins.add('https://asocedinane-eta.vercel.app')
+    allowedOrigins.add('http://localhost:3000')
+
+    let redirectTo: string | undefined = undefined
+    if (requestedRedirect) {
+      try {
+        const r = new URL(requestedRedirect)
+        if (allowedOrigins.has(r.origin)) {
+          redirectTo = requestedRedirect
+        } else {
+          // ignore unsafe redirectTo
+          redirectTo = undefined
+        }
+      } catch (e) {
+        redirectTo = undefined
+      }
+    } else if (envRedirect) {
+      redirectTo = envRedirect
+    }
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined)
 
