@@ -23,6 +23,10 @@ async function postToSupabaseToken(code: string, redirectTo: string | undefined)
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       Authorization: `Bearer ${serviceRoleKey}`,
+      // Supabase token endpoint requires the `apikey` header containing the
+      // service_role key (some projects also accept only this header). Include
+      // it to avoid 401: "No API key found in request".
+      apikey: serviceRoleKey,
     },
     body: body.toString(),
   })
