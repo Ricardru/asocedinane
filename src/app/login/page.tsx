@@ -53,10 +53,10 @@ export default function LoginPage() {
       console.log('[login] session established successfully')
       
       // Refrescar el router para que el middleware detecte las cookies
-      router.refresh()
+  //router.refresh()
       
       // Pequeña pausa para asegurar que las cookies se escribieron
-      await new Promise(resolve => setTimeout(resolve, 100))
+  //await new Promise(resolve => setTimeout(resolve, 100))
       
       // Redirigir al dashboard
       console.log('[login] redirecting to dashboard')
