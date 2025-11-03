@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+// Ya no necesitamos importar 'supabase' ni 'useRouter'
+// import { supabase } from '@/lib/supabase' 
+// import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,61 +11,48 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
+  // const router = useRouter() // Eliminado
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[login] submit', { email })
+    console.log('[login client] Enviando credenciales al servidor...')
     setLoading(true)
     setError('')
 
     try {
-      // Limpiar cualquier sesión anterior
-      //console.log('[login] clearing previous session')
-      //await supabase.auth.signOut()
-
-      // Intentar iniciar sesión
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
-      console.log('[login] signInWithPassword result', { 
-        hasSession: !!data?.session, 
-        hasUser: !!data?.user,
-        error: signInError 
+      // 🚨 ¡Importante! Ahora llamamos al Route Handler (el servidor)
+      const response = await fetch('/login/route.ts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       })
 
-      if (signInError) {
-        console.error('[login] supabase error', signInError)
-        setError(signInError.message)
-        setLoading(false)
-        return
+      const result = await response.json()
+      
+      console.log('[login client] Respuesta del servidor:', result)
+
+      if (result.success) {
+        // El servidor ya estableció las cookies. Forzamos una recarga.
+        console.log('[login client] Sesión establecida por el servidor. Forzando redirección...')
+        // Usar window.location.replace asegura que el navegador recarga la página
+        // y que el middleware se ejecuta correctamente con las cookies del servidor.
+        window.location.replace('/dashboard') 
+        // El código se detiene aquí y se recarga la página.
+        return 
+
+      } else {
+        // Error de credenciales (401) o error interno (500)
+        setError(result.error || 'Error desconocido al iniciar sesión. Intenta de nuevo.')
       }
 
-      if (!data?.session) {
-        console.error('[login] no session returned')
-        setError('No se pudo establecer la sesión')
-        setLoading(false)
-        return
-      }
-
-      // ✅ Supabase ya guardó las cookies automáticamente
-      console.log('[login] session established successfully')
-      
-      // Refrescar el router para que el middleware detecte las cookies
-  //router.refresh()
-      
-      // Pequeña pausa para asegurar que las cookies se escribieron
-  //await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Redirigir al dashboard
-      console.log('[login] redirecting to dashboard')
-      router.push('/dashboard')
-      
     } catch (err) {
-      console.error('[login] unexpected error', err)
-      setError('Error inesperado al iniciar sesión. Por favor intenta de nuevo.')
+      // Error de red (el servidor no responde)
+      console.error('[login client] Error de conexión:', err)
+      setError('Error de conexión. Por favor, verifica tu red.')
+    } finally {
+      // Esto solo se ejecuta si la redirección falla o si hay un error
       setLoading(false)
     }
   }
