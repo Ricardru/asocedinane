@@ -24,28 +24,43 @@ export function createServerSupabaseClient(cookieStore: any) {
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
-        const cookie = cookieStore.get(name)?.value || null
-        return cookie
+        try {
+          // cookieStore.get may return:
+          // - undefined/null
+          // - a string (when middleware provided request.cookies.get(...).value)
+          // - an object with a `.value` property (the Next.js RequestCookies API)
+          const raw = typeof cookieStore.get === 'function' ? cookieStore.get(name) : undefined
+          if (!raw) return null
+          if (typeof raw === 'string') return raw
+          if (typeof raw === 'object' && 'value' in raw) return raw.value || null
+          return null
+        } catch (err) {
+          return null
+        }
       },
       set(name: string, value: string, options: any) {
         try {
-          cookieStore.set(name, value, {
-            ...options,
-            sameSite: 'none',
-            secure: true,
-          })
+          if (typeof cookieStore.set === 'function') {
+            cookieStore.set(name, value, {
+              ...options,
+              sameSite: 'none',
+              secure: true,
+            })
+          }
         } catch (error) {
           // Ignorar errores si no estamos en un contexto donde se pueden escribir cookies
         }
       },
       remove(name: string, options: any) {
         try {
-          cookieStore.set(name, '', { 
-            ...options, 
-            maxAge: 0,
-            sameSite: 'none',
-            secure: true,
-          })
+          if (typeof cookieStore.set === 'function') {
+            cookieStore.set(name, '', { 
+              ...options, 
+              maxAge: 0,
+              sameSite: 'none',
+              secure: true,
+            })
+          }
         } catch (error) {
           // Ignorar errores
         }
@@ -62,23 +77,35 @@ export function createServerSupabaseClientForActions(cookieStore: any) {
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
-        return cookieStore.get(name)?.value || null
+        try {
+          const raw = typeof cookieStore.get === 'function' ? cookieStore.get(name) : undefined
+          if (!raw) return null
+          if (typeof raw === 'string') return raw
+          if (typeof raw === 'object' && 'value' in raw) return raw.value || null
+          return null
+        } catch (err) {
+          return null
+        }
       },
       set(name: string, value: string, options: any) {
         // This must only be called from a Server Action or Route Handler.
-        return cookieStore.set(name, value, {
-          ...options,
-          sameSite: 'none',
-          secure: true,
-        })
+        if (typeof cookieStore.set === 'function') {
+          return cookieStore.set(name, value, {
+            ...options,
+            sameSite: 'none',
+            secure: true,
+          })
+        }
       },
       remove(name: string, options: any) {
-        return cookieStore.set(name, '', { 
-          ...options, 
-          maxAge: 0,
-          sameSite: 'none',
-          secure: true,
-        })
+        if (typeof cookieStore.set === 'function') {
+          return cookieStore.set(name, '', { 
+            ...options, 
+            maxAge: 0,
+            sameSite: 'none',
+            secure: true,
+          })
+        }
       },
     },
   })
