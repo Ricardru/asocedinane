@@ -15,32 +15,51 @@ export async function middleware(request: NextRequest) {
       supabaseResponse = NextResponse.next({
         request,
       })
-      supabaseResponse.cookies.set(name, value, options)
+      supabaseResponse.cookies.set(name, value, {
+        ...options,
+        sameSite: 'none',
+        secure: true,
+      })
     },
     remove(name: string, options: any) {
       request.cookies.set(name, '')
       supabaseResponse = NextResponse.next({
         request,
       })
-      supabaseResponse.cookies.set(name, '', { ...options, maxAge: 0 })
+      supabaseResponse.cookies.set(name, '', { 
+        ...options, 
+        maxAge: 0,
+        sameSite: 'none',
+        secure: true,
+      })
     },
   })
 
+  // Obtener el usuario actual
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser()
 
-  // Si hay un error al obtener el usuario, asumir que no está autenticado
-  const isAuthenticated = user && !userError
+  const isPublicRoute = 
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/register') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname === '/'
 
-  if (
-    !isAuthenticated &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/register')
-  ) {
+  // Si no hay usuario y no es ruta pública, redirigir a login
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    console.log('[middleware] no user, redirecting to login from:', request.nextUrl.pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Si hay usuario e intenta acceder a login/register, redirigir a dashboard
+  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    console.log('[middleware] user authenticated, redirecting to dashboard')
     return NextResponse.redirect(url)
   }
 
@@ -54,9 +73,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - api routes (handled separately)
      */
-    // Exclude Next.js internals, static assets, favicons, images and API routes from the middleware
-    '/((?!_next/static|_next/image|favicon.ico|api|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

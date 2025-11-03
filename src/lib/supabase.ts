@@ -8,10 +8,13 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
   },
   cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    // CRÍTICO: En producción debe ser 'none' para que funcione con Vercel
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: true, // Siempre true, incluso en desarrollo
     maxAge: 60 * 60 * 24 * 7, // 7 días
   },
 })
@@ -24,25 +27,28 @@ export function createServerSupabaseClient(cookieStore: any) {
         const cookie = cookieStore.get(name)?.value || null
         return cookie
       },
-      // NOTE: Next.js only allows modifying cookies inside a Server Action or
-      // a Route Handler. Many server components render during normal requests
-      // and cannot call `cookies().set` — attempting to do so throws the
-      // runtime error you saw. To avoid that, we make set/remove no-ops here
-      // when this helper is used from a plain server component. If you need to
-      // write cookies (for example, to persist auth tokens), call
-      // `createServerSupabaseClientForActions` from a Server Action or Route
-      // Handler where cookie modifications are permitted.
-      set() {
-        // no-op on render path to avoid Next.js runtime error
-        // caller can implement writable cookie behavior in Server Actions
-        // where cookieStore.set is allowed.
-        // eslint-disable-next-line no-console
-        console.warn('[supabase] cookie set skipped: not in a Server Action/Route Handler')
+      set(name: string, value: string, options: any) {
+        try {
+          cookieStore.set(name, value, {
+            ...options,
+            sameSite: 'none',
+            secure: true,
+          })
+        } catch (error) {
+          // Ignorar errores si no estamos en un contexto donde se pueden escribir cookies
+        }
       },
-      remove() {
-        // no-op
-        // eslint-disable-next-line no-console
-        console.warn('[supabase] cookie remove skipped: not in a Server Action/Route Handler')
+      remove(name: string, options: any) {
+        try {
+          cookieStore.set(name, '', { 
+            ...options, 
+            maxAge: 0,
+            sameSite: 'none',
+            secure: true,
+          })
+        } catch (error) {
+          // Ignorar errores
+        }
       },
     },
   })
@@ -60,10 +66,19 @@ export function createServerSupabaseClientForActions(cookieStore: any) {
       },
       set(name: string, value: string, options: any) {
         // This must only be called from a Server Action or Route Handler.
-        return cookieStore.set(name, value, options)
+        return cookieStore.set(name, value, {
+          ...options,
+          sameSite: 'none',
+          secure: true,
+        })
       },
       remove(name: string, options: any) {
-        return cookieStore.set(name, '', { ...options, maxAge: 0 })
+        return cookieStore.set(name, '', { 
+          ...options, 
+          maxAge: 0,
+          sameSite: 'none',
+          secure: true,
+        })
       },
     },
   })
