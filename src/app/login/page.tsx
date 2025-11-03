@@ -20,8 +20,8 @@ export default function LoginPage() {
 
     try {
       // Limpiar cualquier sesión anterior
-      console.log('[login] clearing previous session')
-      await supabase.auth.signOut()
+      //console.log('[login] clearing previous session')
+      //await supabase.auth.signOut()
 
       // Intentar iniciar sesión
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
