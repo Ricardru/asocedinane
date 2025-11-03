@@ -1,7 +1,10 @@
-// app/login/route.ts (Crear este archivo)
+// app/login/api/route.ts (Crear este archivo)
 import { createServerSupabaseClientForActions } from '@/lib/supabase'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+
+// CRÍTICO: Forzar el entorno de ejecución a Node.js
+export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
   const { email, password } = await request.json()

@@ -3,6 +3,9 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 
+// CRÍTICO: Forzar el entorno de ejecución a Node.js
+export const runtime = 'nodejs'
+
 export default async function DashboardLayout({
   children,
 }: {
