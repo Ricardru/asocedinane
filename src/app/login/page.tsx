@@ -1,9 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-// Ya no necesitamos importar 'supabase' ni 'useRouter'
-// import { supabase } from '@/lib/supabase' 
-// import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -11,7 +8,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // const router = useRouter() // Eliminado
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,8 +16,9 @@ export default function LoginPage() {
     setError('')
 
     try {
-      // 🚨 ¡Importante! Ahora llamamos al Route Handler (el servidor)
-      const response = await fetch('/login/route.ts', {
+      // 🚨 Llamada al Route Handler (el servidor)
+      // Asegúrate de que el path sea correcto (sin el .ts al final en el fetch)
+      const response = await fetch('/login', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,13 +30,10 @@ export default function LoginPage() {
       
       console.log('[login client] Respuesta del servidor:', result)
 
-      if (result.success) {
-        // El servidor ya estableció las cookies. Forzamos una recarga.
+      if (response.ok && result.success) {
+        // Redirección forzada para que el middleware re-evalúe
         console.log('[login client] Sesión establecida por el servidor. Forzando redirección...')
-        // Usar window.location.replace asegura que el navegador recarga la página
-        // y que el middleware se ejecuta correctamente con las cookies del servidor.
         window.location.replace('/dashboard') 
-        // El código se detiene aquí y se recarga la página.
         return 
 
       } else {
@@ -52,7 +46,6 @@ export default function LoginPage() {
       console.error('[login client] Error de conexión:', err)
       setError('Error de conexión. Por favor, verifica tu red.')
     } finally {
-      // Esto solo se ejecuta si la redirección falla o si hay un error
       setLoading(false)
     }
   }
