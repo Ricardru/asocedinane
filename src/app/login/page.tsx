@@ -141,6 +141,14 @@ export default function LoginPage() {
             >
               ¿No tienes cuenta? Regístrate
             </a>
+            <div className="mt-2">
+              <a
+                href="/login/reset"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </div>
         </form>
       </div>
