@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       // 🚨 Llamada al Route Handler (el servidor)
       // Asegúrate de que el path sea correcto (sin el .ts al final en el fetch)
-      const response = await fetch('/login', { 
+      const response = await fetch('/login/api', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
