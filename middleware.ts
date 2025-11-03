@@ -2,31 +2,30 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  // 1. Inicializar la respuesta. Esta es la variable que modificaremos con las cookies.
+  let response = NextResponse.next({
     request,
   })
 
+  // 2. Crear el cliente de Supabase.
+  // CRÍTICO: Los métodos 'set' y 'remove' DEBEN actuar sobre la variable 'response', NO sobre 'request'.
   const supabase = createServerSupabaseClient({
     get(name: string) {
+      // Leer la cookie de la solicitud entrante (request.cookies.get está bien)
       return request.cookies.get(name)?.value
     },
     set(name: string, value: string, options: any) {
-      request.cookies.set(name, value)
-      supabaseResponse = NextResponse.next({
-        request,
-      })
-      supabaseResponse.cookies.set(name, value, {
+      // Escribir la cookie directamente en la respuesta (response)
+      // ESTA ES LA CLAVE DE LA SOLUCIÓN, evitando la manipulación del request
+      response.cookies.set(name, value, {
         ...options,
-        sameSite: 'none',
+        sameSite: 'none', // Clave para Vercel
         secure: true,
       })
     },
     remove(name: string, options: any) {
-      request.cookies.set(name, '')
-      supabaseResponse = NextResponse.next({
-        request,
-      })
-      supabaseResponse.cookies.set(name, '', { 
+      // Eliminar la cookie de la respuesta
+      response.cookies.set(name, '', { 
         ...options, 
         maxAge: 0,
         sameSite: 'none',
@@ -35,10 +34,14 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Obtener el usuario actual
+  // 3. Refrescar la sesión (esto usa los métodos get/set definidos arriba)
+  await supabase.auth.getUser()
+
+  // --- LÓGICA DE AUTORIZACIÓN ---
+
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser() 
 
   const isPublicRoute = 
     request.nextUrl.pathname.startsWith('/login') ||
@@ -63,7 +66,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return supabaseResponse
+  // 4. Devolver la respuesta (que ahora incluye cualquier cookie de Supabase actualizada)
+  return response 
 }
 
 export const config = {
@@ -73,7 +77,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - api routes (handled separately)
+     * - archivos estáticos (.svg, .png, etc.)
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
