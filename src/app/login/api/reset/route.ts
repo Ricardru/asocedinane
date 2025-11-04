@@ -11,6 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email requerido' }, { status: 400 })
     }
 
+    // Logging temporal para debugging en Vercel - NO imprimir claves
+    console.log('[reset] request body received:', { email, redirectTo: !!body?.redirectTo })
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
@@ -57,6 +60,13 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined)
+
+    // Log response summary (no tokens)
+    if (error) {
+      console.error('[reset] supabase.resetPasswordForEmail error:', error.message)
+    } else {
+      console.log('[reset] supabase.resetPasswordForEmail success: email sent (subject masked)')
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
