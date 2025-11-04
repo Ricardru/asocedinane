@@ -28,6 +28,32 @@ export default function SetNewPasswordPage() {
           const q = new URL(window.location.href).searchParams
           accessToken = q.get('access_token')
           refreshToken = q.get('refresh_token')
+
+          // Si no hay access_token pero sí hay un code (PKCE flow), redirigir
+          // al endpoint server-side que intercambia el code por tokens. Esto
+          // permite que Supabase envíe `?code=...` y la app haga el intercambio
+          // seguro con la SERVICE_ROLE_KEY.
+          const code = q.get('code')
+          const errorParam = q.get('error')
+          const errorDesc = q.get('error_description')
+          if (!accessToken && code) {
+            // Evitar bucles: sólo redirigir si no estamos ya en la ruta de exchange
+            const exchangeUrl = `/login/api/exchange?code=${encodeURIComponent(code)}`
+            try {
+              // Reemplazar la ubicación para que el usuario vuelva luego a
+              // /login/set-new-password sin el código en la barra.
+              window.location.replace(exchangeUrl)
+              return
+            } catch (e) {
+              // Si replace falla, intentar assign como fallback
+              try { window.location.assign(exchangeUrl) } catch (e) { }
+            }
+          }
+
+          // Mostrar errores que vengan en la query (por ejemplo: otp_expired)
+          if (!accessToken && errorParam) {
+            setError(errorDesc || 'Enlace inválido o expirado.')
+          }
         }
       }
 
