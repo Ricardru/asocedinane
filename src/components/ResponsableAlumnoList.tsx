@@ -23,8 +23,11 @@ interface ResponsableAlumno {
     email: string
   }
   alumno?: {
-    nombre_completo: string
-    identificacion: string
+    id: string
+    personas?: {
+      nombre_completo: string
+      identificacion: string
+    }
   }
   tipo_relacion?: {
     descripcion: string
@@ -54,9 +57,12 @@ export function ResponsableAlumnoList() {
             telefono,
             email
           ),
-          alumno:personas!alumnos(
-            nombre_completo,
-            identificacion
+          alumno:alumnos!fk_alumno_relacion(
+            id,
+            personas(
+              nombre_completo,
+              identificacion
+            )
           ),
           tipo_relacion(
             descripcion
@@ -103,7 +109,7 @@ export function ResponsableAlumnoList() {
 
   const filteredResponsables = responsables.filter(r => {
     const responsableName = r.responsable?.nombre_completo || ''
-    const alumnoName = r.alumno?.nombre_completo || ''
+    const alumnoName = r.alumno?.personas?.nombre_completo || ''
     const tipo = r.tipo_relacion?.descripcion || ''
     const searchLower = searchTerm.toLowerCase()
 
@@ -118,8 +124,8 @@ export function ResponsableAlumnoList() {
       'Identificación Responsable': r.responsable?.identificacion || '',
       'Email Responsable': r.responsable?.email || '',
       'Teléfono Responsable': r.responsable?.telefono || '',
-      'Alumno': r.alumno?.nombre_completo || 'Sin alumno',
-      'Identificación Alumno': r.alumno?.identificacion || '',
+      'Alumno': r.alumno?.personas?.nombre_completo || 'Sin alumno',
+      'Identificación Alumno': r.alumno?.personas?.identificacion || '',
       'Tipo de Relación': r.tipo_relacion?.descripcion || 'Sin tipo',
       'Contacto Principal': r.ind_contacto_principal ? 'Sí' : 'No',
       'Autorizado para Retiro': r.ind_autorizado_retiro ? 'Sí' : 'No',
@@ -146,7 +152,7 @@ export function ResponsableAlumnoList() {
         r.responsable?.identificacion || '',
         r.responsable?.email || '',
         r.responsable?.telefono || '',
-        r.alumno?.nombre_completo || 'Sin alumno',
+        r.alumno?.personas?.nombre_completo || 'Sin alumno',
         r.tipo_relacion?.descripcion || 'Sin tipo',
         r.ind_contacto_principal ? 'Sí' : 'No',
         r.ind_autorizado_retiro ? 'Sí' : 'No',
@@ -177,7 +183,7 @@ export function ResponsableAlumnoList() {
               ${filteredResponsables.map(r => `
                   <tr>
                     <td>${r.responsable?.nombre_completo || 'Sin responsable'}</td>
-                    <td>${r.alumno?.nombre_completo || 'Sin alumno'}</td>
+                    <td>${r.alumno?.personas?.nombre_completo || 'Sin alumno'}</td>
                     <td>${r.tipo_relacion?.descripcion || 'Sin tipo'}</td>
                     <td>${r.ind_contacto_principal ? 'Sí' : 'No'}</td>
                     <td>${r.ind_autorizado_retiro ? 'Sí' : 'No'}</td>
@@ -281,9 +287,9 @@ export function ResponsableAlumnoList() {
                       <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                         {r.responsable?.nombre_completo || 'Responsable desconocido'}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-300">
-                        Alumno: {r.alumno?.nombre_completo || 'Alumno desconocido'}
-                      </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                          Alumno: {r.alumno?.personas?.nombre_completo || 'Alumno desconocido'}
+                        </p>
                       <p className="text-sm text-gray-500 dark:text-gray-300">
                         Relación: {r.tipo_relacion?.descripcion || 'Tipo desconocido'}
                       </p>
@@ -356,7 +362,7 @@ export function ResponsableAlumnoList() {
                     {r.responsable?.nombre_completo || 'Responsable desconocido'}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-300">
-                    Alumno: {r.alumno?.nombre_completo || 'Alumno desconocido'}
+                    Alumno: {r.alumno?.personas?.nombre_completo || 'Alumno desconocido'}
                   </p>
                   <p className="text-sm text-blue-600">
                     {r.tipo_relacion?.descripcion || 'Tipo desconocido'}
@@ -417,13 +423,13 @@ export function ResponsableAlumnoList() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Alumno</label>
                     <p className="mt-1 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-md">
-                      {viewingResponsable.alumno?.nombre_completo || 'Sin alumno'}
+                      {viewingResponsable.alumno?.personas?.nombre_completo || 'Sin alumno'}
                     </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Identificación Alumno</label>
                     <p className="mt-1 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 rounded-md">
-                      {viewingResponsable.alumno?.identificacion || '—'}
+                      {viewingResponsable.alumno?.personas?.identificacion || '—'}
                     </p>
                   </div>
                   <div>
