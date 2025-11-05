@@ -359,6 +359,14 @@ export default function Sidebar({ children }: SidebarProps) {
 
       {/* Main Content */}
   <main className="flex-1 p-8 bg-gray-900 relative">
+        {/* Home button (always visible) */}
+        <a href="/dashboard" className="absolute left-4 top-4 z-40 inline-flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-md text-white border border-transparent hover:border-white/10 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00FFFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9.75L12 4l9 5.75V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V9.75z" />
+          </svg>
+          <span className="text-sm text-white">Panel</span>
+        </a>
+
         {/* Logout Button - Always Visible */}
   <div className="fixed top-4 right-4 z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
           <LogoutButton />

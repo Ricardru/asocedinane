@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Nexus Operacional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN para gráficos basados en Canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <!-- Configuración Tailwind para tema oscuro y acentos neón -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-dark': '#0f172a', // Slate-900 oscuro
+                        'neon-cyan': '#22d3ee', // Cyan-400
+                        'neon-green': '#4ade80', // Green-400
+                        'neon-red': '#f87171', // Red-400
+                        'card-dark': '#1e293b', // Slate-800
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Estilo base para simular el efecto futurista */
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.5), 0 0 5px rgba(34, 211, 238, 0.2);
+            border: 1px solid #22d3ee;
+        }
+
+        /* Estilo para los valores de KPI */
+        .kpi-value {
+            text-shadow: 0 0 5px #22d3ee;
+            font-weight: 700;
+        }
+
+        /* Asegurar que el canvas sea responsivo */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-bg-dark text-gray-100 font-sans min-h-screen p-4 sm:p-8">
+
+    <!-- Título Principal -->
+    <header class="mb-8 border-b border-cyan-400/50 pb-4">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-wider">
+            <span class="text-neon-cyan kpi-value">NEXUS</span> OPERACIONAL
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">Monitoreo en Tiempo Real - Visión Consolidada</p>
+    </header>
+
+    <!-- Sección de KPIs (Indicadores Clave de Rendimiento) -->
+    <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <!-- Los KPIs se renderizarán aquí -->
+    </section>
+
+    <!-- Contenedor Principal de Gráficos y Tablas -->
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Columna Izquierda (Financiera) -->
+        <div class="lg:col-span-2 space-y-8">
+
+            <!-- Panel A: Flujo de Caja (Gráfico de Líneas) -->
+            <div class="bg-card-dark p-6 rounded-xl neon-glow">
+                <h2 class="text-xl font-semibold mb-4 text-neon-cyan">ANÁLISIS DE FLUJO (Últimos 6 Meses)</h2>
+                <div class="chart-container">
+                    <canvas id="flowChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Panel B: Cuentas por Cobrar y Stock Crítico (Grillas) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Cuentas por Cobrar -->
+                <div class="bg-card-dark p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-4 text-white">STATUS DE FACTURACIÓN (Saldo Pendiente)</h2>
+                    <div id="accountsReceivable" class="text-sm space-y-3">
+                        <!-- La tabla de cuentas por cobrar se renderizará aquí -->
+                    </div>
+                </div>
+
+                <!-- Alertas de Stock Crítico -->
+                <div class="bg-card-dark p-6 rounded-xl border border-neon-red/70 shadow-lg shadow-neon-red/20">
+                    <h2 class="text-xl font-semibold mb-4 text-neon-red">🚨 ALERTAS DE STOCK CRÍTICO</h2>
+                    <div id="criticalStock" class="text-sm text-gray-300 space-y-2">
+                        <!-- La lista de stock crítico se renderizará aquí -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Columna Derecha (Académico/Egresos/Metas) -->
+        <div class="lg:col-span-1 space-y-8">
+            
+            <!-- Panel C: Distribución de Egresos (Gráfico Donut) -->
+            <div class="bg-card-dark p-6 rounded-xl neon-glow">
+                <h2 class="text-xl font-semibold mb-4 text-neon-cyan">IMPACTO DE GASTOS (Último Mes)</h2>
+                <div class="chart-container h-64">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Panel D: Distribución de Alumnos por Turno/Programa -->
+            <div class="bg-card-dark p-6 rounded-xl border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-white">DISTRIBUCIÓN DE ALUMNOS</h2>
+                <div id="academicDistribution" class="text-sm space-y-3">
+                    <!-- La distribución académica se renderizará aquí -->
+                </div>
+            </div>
+            
+        </div>
+
+    </main>
+
+    <footer class="mt-10 pt-4 border-t border-gray-700 text-center text-xs text-gray-500">
+        Nexus Operacional | Dashboard Propuesta basada en Esquema de DB | 2024
+    </footer>
+
+    <script type="module">
+        // =========================================================================
+        // 1. MOCK DATA (Datos simulados basados en el esquema de la base de datos)
+        // =========================================================================
+
+        const mockData = {
+            // Datos Financieros Mensuales (últimos 6 meses)
+            financialFlow: [
+                { month: "Mayo", income: 75000, expense: 20000 },
+                { month: "Junio", income: 82000, expense: 25000 },
+                { month: "Julio", income: 95000, expense: 30000 },
+                { month: "Agosto", income: 70000, expense: 22000 },
+                { month: "Septiembre", income: 88000, expense: 28000 },
+                { month: "Octubre", income: 96000, expense: 26000 } // Mes Actual
+            ],
+            // Egresos (simulación de categorias_egresos)
+            expenses: [
+                { category: 'Nómina y Salarios', amount: 15000 },
+                { category: 'Adquisición de Insumos', amount: 5500 },
+                { category: 'Servicios Básicos', amount: 2000 },
+                { category: 'Mantenimiento IT', amount: 3500 },
+            ],
+            // Alumnos (simulación de alumnos y turnos)
+            alumnos: [
+                { id: 'a1', activo: true, turno: 'Mañana', beca: true },
+                { id: 'a2', activo: true, turno: 'Tarde', beca: false },
+                { id: 'a3', activo: true, turno: 'Mañana', beca: false },
+                { id: 'a4', activo: false, turno: 'Tarde', beca: false },
+                { id: 'a5', activo: true, turno: 'Noche', beca: true },
+                // 1500 más...
+            ],
+            // Productos con stock crítico
+            products: [
+                { name: 'Libro de Texto A', stock: 5, min: 20, type: 'producto' },
+                { name: 'Servicio Cloud Premium', stock: 999, min: 10, type: 'servicio' },
+                { name: 'Kit de Bienvenida', stock: 12, min: 15, type: 'producto' },
+                { name: 'Licencia Software Educativo', stock: 10, min: 10, type: 'producto' },
+            ],
+            // Facturas de Venta (simulación de facturas_venta)
+            invoices: [
+                { id: 'f1', total: 1000, pending: 0, state: 'pagada' },
+                { id: 'f2', total: 500, pending: 500, state: 'pendiente' },
+                { id: 'f3', total: 2500, pending: 1000, state: 'parcial' },
+                { id: 'f4', total: 1200, pending: 1200, state: 'pendiente' },
+                { id: 'f5', total: 800, pending: 0, state: 'pagada' },
+            ]
+        };
+
+        // Simular datos agregados para el mes actual
+        const currentMonthData = mockData.financialFlow[mockData.financialFlow.length - 1];
+        const previousMonthData = mockData.financialFlow[mockData.financialFlow.length - 2];
+
+        // =========================================================================
+        // 2. RENDERING FUNCTIONS
+        // =========================================================================
+
+        /**
+         * Renders the Key Performance Indicators (KPIs).
+         */
+        function renderKPIs() {
+            const totalIncome = currentMonthData.income;
+            const totalExpense = currentMonthData.expense;
+            const netBalance = totalIncome - totalExpense;
+            
+            // Cálculos de tendencia
+            const incomeChange = ((totalIncome - previousMonthData.income) / previousMonthData.income) * 100;
+            const expenseChange = ((totalExpense - previousMonthData.expense) / previousMonthData.expense) * 100;
+            
+            // Simular alumnos activos (total + alumnos simulados)
+            const baseAlumnos = 1500;
+            const activeAlumnos = baseAlumnos + mockData.alumnos.filter(a => a.activo).length;
+            const prevActiveAlumnos = activeAlumnos / 1.021; // Simular crecimiento del 2.1%
+            const alumnoChange = ((activeAlumnos - prevActiveAlumnos) / prevActiveAlumnos) * 100;
+
+            const kpiData = [
+                { title: 'INGRESOS NETOS', value: totalIncome, change: incomeChange, format: 'currency', color: 'neon-green' },
+                { title: 'EGRESOS TOTALES', value: totalExpense, change: expenseChange, format: 'currency', color: 'neon-red' },
+                { title: 'SALDO OPERACIONAL', value: netBalance, change: null, format: 'currency', color: netBalance >= 0 ? 'neon-cyan' : 'neon-red' },
+                { title: 'ALUMNOS ACTIVOS', value: activeAlumnos, change: alumnoChange, format: 'number', color: 'neon-cyan' }
+            ];
+
+            const container = document.getElementById('kpis');
+            container.innerHTML = kpiData.map(kpi => {
+                const isPositive = kpi.change >= 0;
+                const changeColor = isPositive ? 'text-neon-green' : 'text-neon-red';
+                const arrow = isPositive ? '↑' : '↓';
+                const formattedValue = kpi.format === 'currency' 
+                    ? `$ ${kpi.value.toLocaleString('es-ES', { minimumFractionDigits: 2 })}` 
+                    : kpi.value.toLocaleString('es-ES');
+                
+                const changeHtml = kpi.change !== null 
+                    ? `<span class="${changeColor} font-medium text-xs">${arrow} ${Math.abs(kpi.change).toFixed(1)}%</span> vs. mes ant.`
+                    : '<span class="text-gray-400 text-xs">KPI Clave</span>';
+
+                return `
+                    <div class="bg-card-dark p-4 rounded-lg border-b-4 border-${kpi.color} shadow-lg hover:shadow-xl transition duration-300">
+                        <p class="text-sm font-light text-gray-400">${kpi.title}</p>
+                        <p class="text-3xl mt-1 text-${kpi.color} kpi-value">${formattedValue}</p>
+                        <p class="text-xs text-gray-500 mt-1">${changeHtml}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Draws the Financial Flow Line Chart using Chart.js.
+         */
+        function drawFlowChart() {
+            const ctx = document.getElementById('flowChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: mockData.financialFlow.map(d => d.month),
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: mockData.financialFlow.map(d => d.income),
+                            borderColor: '#4ade80', // neon-green
+                            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: '#4ade80',
+                            pointRadius: 4,
+                        },
+                        {
+                            label: 'Egresos',
+                            data: mockData.financialFlow.map(d => d.expense),
+                            borderColor: '#f87171', // neon-red
+                            backgroundColor: 'rgba(248, 113, 113, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointBackgroundColor: '#f87171',
+                            pointRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white',
+                                boxWidth: 10,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)', // card-dark
+                            titleColor: '#22d3ee', // neon-cyan
+                            bodyColor: 'white',
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: $${context.parsed.y.toLocaleString('es-ES')}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(71, 85, 105, 0.3)' }, // slate-600/30
+                            ticks: { color: 'gray' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: 'gray' }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Draws the Expense Distribution Donut Chart using Chart.js.
+         */
+        function drawExpenseDistribution() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const data = mockData.expenses.map(d => d.amount);
+            const labels = mockData.expenses.map(d => d.category);
+
+            // Colores Neón para el Donut
+            const backgroundColors = [
+                '#22d3ee', // neon-cyan (Principal)
+                '#4ade80', // neon-green
+                '#fcd34d', // amber-300
+                '#e879f9', // fuchsia-400
+            ];
+            const hoverColors = [
+                '#67e8f9',
+                '#86efac',
+                '#fde68a',
+                '#f0abfc',
+            ];
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverBackgroundColor: hoverColors,
+                        borderWidth: 1,
+                        borderColor: '#0f172a' // bg-dark para separación
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'white',
+                                boxWidth: 10,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            titleColor: '#22d3ee',
+                            bodyColor: 'white',
+                            callbacks: {
+                                label: (context) => {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const value = context.parsed;
+                                    const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return `${context.label}: $${value.toLocaleString('es-ES')} (${percentage})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Renders the Academic Distribution (Alumnos por Turno)
+         */
+        function renderAcademicDistribution() {
+            const turnos = mockData.alumnos.reduce((acc, alumno) => {
+                if (alumno.activo) {
+                    acc[alumno.turno] = (acc[alumno.turno] || { total: 0, beca: 0 });
+                    acc[alumno.turno].total++;
+                    if (alumno.beca) {
+                        acc[alumno.turno].beca++;
+                    }
+                }
+                return acc;
+            }, {});
+
+            const totalActivos = mockData.alumnos.filter(a => a.activo).length + 1500;
+            const container = document.getElementById('academicDistribution');
+            
+            // Simular un crecimiento base de 1500 alumnos
+            const totalTurnos = Object.values(turnos).reduce((sum, t) => sum + t.total, 0);
+            const alumnosBase = 1500; // Asumimos que 1500 están en los programas
+            
+            const distributionHTML = `
+                <div class="space-y-4">
+                    ${Object.keys(turnos).map(turno => {
+                        const count = turnos[turno].total + (turno === 'Mañana' ? 600 : turno === 'Tarde' ? 500 : 400); // Ajuste simulado
+                        const percentage = ((count / totalActivos) * 100).toFixed(1);
+                        const becaPercent = ((turnos[turno].beca / count) * 100).toFixed(0);
+                        
+                        return `
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-gray-300 font-medium">${turno}</span>
+                                    <span class="text-neon-cyan">${count} alumnos (${percentage}%)</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-neon-cyan h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Beca Aplicada: <span class="${becaPercent > 10 ? 'text-neon-green' : 'text-gray-500'}">${becaPercent}%</span></p>
+                            </div>
+                        `;
+                    }).join('')}
+                    
+                    <div class="pt-4 border-t border-gray-700/50">
+                        <p class="font-bold text-lg text-white">Total General:</p>
+                        <p class="text-3xl text-neon-cyan kpi-value">${totalActivos.toLocaleString('es-ES')}</p>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = distributionHTML;
+        }
+
+        /**
+         * Renders the Accounts Receivable summary.
+         */
+        function renderAccountsReceivable() {
+            const summary = mockData.invoices.reduce((acc, inv) => {
+                acc[inv.state] = (acc[inv.state] || { count: 0, amount: 0 });
+                acc[inv.state].count++;
+                acc[inv.state].amount += inv.pending;
+                return acc;
+            }, {});
+
+            const totalPending = (summary.pendiente?.amount || 0) + (summary.parcial?.amount || 0);
+
+            const container = document.getElementById('accountsReceivable');
+            container.innerHTML = `
+                <div class="p-3 bg-card-dark rounded-lg border-l-4 border-neon-cyan/80">
+                    <p class="text-4xl font-extrabold text-neon-cyan kpi-value">$${totalPending.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
+                    <p class="text-sm text-gray-400">Total Saldo Pendiente</p>
+                </div>
+                
+                <ul class="space-y-2 text-gray-300">
+                    <li class="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span>Pendiente Completo</span>
+                        <span class="text-neon-red font-semibold">$${(summary.pendiente?.amount || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</span>
+                    </li>
+                    <li class="flex justify-between items-center border-b border-gray-800 pb-1">
+                        <span>Pagos Parciales</span>
+                        <span class="text-amber-400 font-semibold">$${(summary.parcial?.amount || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</span>
+                    </li>
+                    <li class="flex justify-between items-center pb-1">
+                        <span>Facturas Pagadas</span>
+                        <span class="text-neon-green font-semibold">${(summary.pagada?.count || 0) + (summary.pendiente?.count || 0) + (summary.parcial?.count || 0)} emitidas</span>
+                    </li>
+                </ul>
+            `;
+        }
+
+        /**
+         * Renders the Critical Stock Alerts.
+         */
+        function renderAlerts() {
+            const criticalItems = mockData.products.filter(p => p.type === 'producto' && p.stock <= p.min);
+            const container = document.getElementById('criticalStock');
+
+            if (criticalItems.length === 0) {
+                container.innerHTML = '<p class="text-neon-green/70">✅ No hay alertas de stock crítico. Sistema Operacional.</p>';
+                return;
+            }
+
+            container.innerHTML = criticalItems.map(item => `
+                <div class="bg-card-dark p-3 rounded-md flex justify-between items-center border border-neon-red/50">
+                    <div>
+                        <p class="font-medium text-white">${item.name}</p>
+                        <p class="text-xs text-gray-400">Stock Actual: <span class="text-neon-red">${item.stock}</span> (Mínimo: ${item.min})</p>
+                    </div>
+                    <button class="text-xs bg-neon-red/30 text-white px-2 py-1 rounded-full hover:bg-neon-red/50 transition">Comprar</button>
+                </div>
+            `).join('');
+        }
+
+
+        // =========================================================================
+        // 3. INITIALIZATION
+        // =========================================================================
+
+        /**
+         * Initializes the dashboard rendering.
+         */
+        function initDashboard() {
+            // Renderizar todos los componentes
+            renderKPIs();
+            drawFlowChart();
+            drawExpenseDistribution();
+            renderAcademicDistribution();
+            renderAccountsReceivable();
+            renderAlerts();
+        }
+
+        // Ejecutar la inicialización cuando la ventana haya cargado
+        window.onload = initDashboard;
+        
+    </script>
+</body>
+</html>
