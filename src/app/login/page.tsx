@@ -135,12 +135,7 @@ export default function LoginPage() {
           </div>
 
           <div className="text-center">
-            <a
-              href="/register"
-              className="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
-            >
-              ¿No tienes cuenta? Regístrate
-            </a>
+            {/* Registro oculto según solicitud - enlace eliminado */}
             <div className="mt-2">
               <a
                 href="/login/reset"
