@@ -28,30 +28,104 @@ export function AlumnoList() {
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards')
   const [searchTerm, setSearchTerm] = useState('')
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [urlCache, setUrlCache] = useState<Record<string, { url: string, expires: number }>>({})
+
+  // Función para manejar las URLs de fotos de manera eficiente
+  const getPhotoUrl = async (path: string) => {
+    const now = Date.now()
+    const cached = urlCache[path]
+    
+    if (cached && cached.expires > now) {
+      return cached.url
+    }
+
+    try {
+      const { data } = await supabase.storage
+        .from('personas-photos')
+        .createSignedUrl(path, 3600)
+      
+      if (data?.signedUrl) {
+        const newCache = {
+          ...urlCache,
+          [path]: {
+            url: data.signedUrl,
+            expires: now + (3600 * 1000) // 1 hora en milisegundos
+          }
+        }
+        setUrlCache(newCache)
+        return data.signedUrl
+      }
+    } catch (e) {
+      console.warn('Error getting photo URL:', e)
+    }
+    return null
+  }
 
   const fetchAlumnos = async () => {
     try {
-      const { data, error } = await supabase.from('alumnos').select('*').order('fecha_inscripcion', { ascending: false })
-      if (error) {
-        console.error('Error fetching alumnos:', error)
+      setLoading(true)
+      
+      // Primero, obtener todos los alumnos
+      const { data: alumnosData, error: alumnosError } = await supabase
+        .from('alumnos')
+        .select('*')
+        .order('fecha_inscripcion', { ascending: false })
+
+      if (alumnosError) {
+        console.error('Error fetching alumnos:', alumnosError)
         setAlumnos([])
         setLoading(false)
         return
       }
 
-      const rows = data || []
+      // Establecer los alumnos inmediatamente para mostrar algo
+      setAlumnos(alumnosData || [])
+
+      // Preparar IDs para consultas relacionadas
+      const personaIds = [...new Set(alumnosData?.map(a => a.id).filter(Boolean) || [])]
+      const becaIds = [...new Set(alumnosData?.map(a => a.beca_id).filter(Boolean) || [])]
+      const turnoIds = [...new Set(alumnosData?.map(a => a.id_turno).filter(Boolean) || [])]
+
+      // Consultas en paralelo para datos relacionados
+      const [
+        { data: personasData },
+        { data: becasData },
+        { data: turnosData }
+      ] = await Promise.all([
+        personaIds.length ? supabase
+          .from('personas')
+          .select('id, nombre_completo, identificacion, email, telefono, direccion, fec_nacimiento, sexo, foto_path')
+          .in('id', personaIds) : Promise.resolve({ data: [] }),
+        becaIds.length ? supabase
+          .from('becas')
+          .select('id, nombre, porcentaje_descuento')
+          .in('id', becaIds) : Promise.resolve({ data: [] }),
+        turnoIds.length ? supabase
+          .from('turnos')
+          .select('id, nombre')
+          .in('id', turnoIds) : Promise.resolve({ data: [] })
+      ])
+
+      if (alumnosError) {
+        console.error('Error fetching alumnos:', alumnosError)
+        setAlumnos([])
+        setLoading(false)
+        return
+      }
+
+      const rows = alumnosData || []
       setAlumnos(rows)
 
-      // collect related ids
-      const personaIds = Array.from(new Set(rows.map((r: any) => r.id).filter(Boolean)))
-      const becaIds = Array.from(new Set(rows.map((r: any) => r.beca_id).filter(Boolean)))
-      const turnoIds = Array.from(new Set(rows.map((r: any) => r.id_turno).filter(Boolean)))
+      // Crear mapas de datos relacionados
+      const pMap: Record<string, any> = {}
+      const bMap: Record<string, any> = {}
+      const tMap: Record<number, any> = {}
 
-      const [personasRes, becasRes, turnosRes] = await Promise.all([
-        personaIds.length ? supabase.from('personas').select('id,nombre_completo,identificacion,email,telefono,direccion,fec_nacimiento,sexo,nacionalidad_id,foto_path,pais_id,departamento_id,ciudad_id,barrio_id').in('id', personaIds) : Promise.resolve({ data: [] }),
-        becaIds.length ? supabase.from('becas').select('id,nombre,porcentaje_descuento').in('id', becaIds) : Promise.resolve({ data: [] }),
-        turnoIds.length ? supabase.from('turnos').select('id,nombre').in('id', turnoIds) : Promise.resolve({ data: [] }),
-      ])
+      rows.forEach((row: any) => {
+        if (row.persona) pMap[row.persona.id] = row.persona
+        if (row.beca) bMap[row.beca.id] = row.beca
+        if (row.turno) tMap[row.turno.id] = row.turno
+      })
 
       const pMap: Record<string, any> = {}
       ;(personasRes.data || []).forEach((p: any) => pMap[p.id] = p)
@@ -107,7 +181,15 @@ export function AlumnoList() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchAlumnos() }, [])
+  useEffect(() => { 
+    // Cargar datos iniciales
+    fetchAlumnos()
+
+    // Limpiar caché al desmontar
+    return () => {
+      setUrlCache({})
+    }
+  }, [])
 
   const activoBool = (val: any) => val === true || val === 'true' || val === 't' || val === 1 || val === '1'
 
@@ -259,11 +341,24 @@ export function AlumnoList() {
                 </div>
                 <div className="pr-20 flex items-center">
                   {/* avatar */}
-                  {personasMap[a.id]?.foto_public_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={personasMap[a.id].foto_public_url} alt="foto" className="w-10 h-10 object-cover rounded-full mr-3" />
+                  {personasMap[a.id]?.foto_path ? (
+                    <img 
+                      src={urlCache[personasMap[a.id].foto_path]?.url || '/placeholder.png'} 
+                      alt="foto" 
+                      className="w-10 h-10 object-cover rounded-full mr-3" 
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.png'
+                      }}
+                      onLoad={() => {
+                        if (!urlCache[personasMap[a.id].foto_path]) {
+                          getPhotoUrl(personasMap[a.id].foto_path)
+                        }
+                      }}
+                    />
                   ) : (
-                    <div className="w-10 h-10 bg-[#01257D] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">{(personasMap[a.id]?.nombre_completo || 'S').charAt(0).toUpperCase()}</div>
+                    <div className="w-10 h-10 bg-[#01257D] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                      {(personasMap[a.id]?.nombre_completo || 'S').charAt(0).toUpperCase()}
+                    </div>
                   )}
                   <div>
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white">{personasMap[a.id]?.nombre_completo || 'Sin persona'}</h3>
