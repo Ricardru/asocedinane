@@ -49,11 +49,21 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
       for (const p of persons) {
         try {
           if (p.foto_path) {
-            const publicUrl = supabase.storage.from('personas-photos').getPublicUrl(p.foto_path).data.publicUrl
-            // p may have a strict type from the DB result; cast to any to attach a UI-only field
-            ;(p as any).foto_public_url = publicUrl
+            const { data: signedData, error: signedErr } = await supabase.storage
+              .from('personas-photos')
+              .createSignedUrl(p.foto_path, 3600) // URL válida por 1 hora
+            
+            if (!signedErr && (signedData as any)?.signedUrl) {
+              ;(p as any).foto_public_url = (signedData as any).signedUrl
+            } else if (signedErr) {
+              console.warn('Error getting signed URL:', signedErr)
+              ;(p as any).foto_public_url = null
+            }
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          console.warn('Exception getting signed URL:', e)
+          ;(p as any).foto_public_url = null
+        }
       }
 
       setPersonas(persons)

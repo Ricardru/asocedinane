@@ -75,14 +75,18 @@ export function AlumnoList() {
 
           if (!chosen) {
             try {
-              const { data: signedData, error: signedErr } = await supabase.storage.from('personas-photos').createSignedUrl(p.foto_path, 60)
-              if (!signedErr && (signedData as any)?.signedUrl) chosen = (signedData as any).signedUrl
+              const { data: signedData, error: signedErr } = await supabase.storage.from('personas-photos').createSignedUrl(p.foto_path, 3600) // Aumentamos el tiempo a 1 hora
+              if (!signedErr && (signedData as any)?.signedUrl) {
+                chosen = (signedData as any).signedUrl
+              } else if (signedErr) {
+                console.warn('Error getting signed URL:', signedErr)
+              }
             } catch (e) {
-              // ignore
+              console.warn('Exception getting signed URL:', e)
             }
           }
 
-          p.foto_public_url = chosen ?? publicUrl
+          p.foto_public_url = chosen || null // Si no hay URL válida, no mostramos imagen
         } catch (e) {
           console.warn('AlumnoList: error computing foto_public_url for', pid, e)
         }
@@ -304,16 +308,22 @@ export function AlumnoList() {
                 </button>
                 <button 
                   onClick={async () => {
-                    if (window.confirm('¿Estás seguro de que deseas inactivar este alumno?')) {
-                      await supabase.from('alumnos').update({ activo: false }).eq('id', a.id)
+                    const newStatus = !activoBool(a.activo);
+                    const message = newStatus ? '¿Estás seguro de que deseas activar este alumno?' : '¿Estás seguro de que deseas inactivar este alumno?';
+                    if (window.confirm(message)) {
+                      await supabase.from('alumnos').update({ activo: newStatus }).eq('id', a.id)
                       fetchAlumnos()
                     }
                   }} 
-                  className="p-2 text-red-600 hover:bg-red-100 rounded-full"
-                  title="Inactivar alumno"
+                  className={`p-2 ${activoBool(a.activo) ? 'text-green-600 hover:bg-green-100' : 'text-red-600 hover:bg-red-100'} rounded-full`}
+                  title={activoBool(a.activo) ? 'Alumno Activo - Click para Inactivar' : 'Alumno Inactivo - Click para Activar'}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    {activoBool(a.activo) ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    )}
                   </svg>
                 </button>
               </div>
