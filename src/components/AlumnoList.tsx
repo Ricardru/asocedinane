@@ -121,54 +121,30 @@ export function AlumnoList() {
       const bMap: Record<string, any> = {}
       const tMap: Record<number, any> = {}
 
-      rows.forEach((row: any) => {
-        if (row.persona) pMap[row.persona.id] = row.persona
-        if (row.beca) bMap[row.beca.id] = row.beca
-        if (row.turno) tMap[row.turno.id] = row.turno
-      })
+      // Mapear datos de los resultados
+      ;(personasData || []).forEach((p: any) => pMap[p.id] = p)
 
-      const pMap: Record<string, any> = {}
-      ;(personasRes.data || []).forEach((p: any) => pMap[p.id] = p)
+      // Mapear datos de becas y turnos
+      ;(becasData || []).forEach((b: any) => bMap[b.id] = b)
+      ;(turnosData || []).forEach((t: any) => tMap[t.id] = t)
 
       // Try to attach a usable public URL for persona photos (best-effort).
-      // Validate public url with a lightweight GET range; if it fails (private bucket or CORS),
-      // attempt to create a signed URL and use it instead.
       for (const pid of Object.keys(pMap)) {
         const p = pMap[pid]
         if (!p || !p.foto_path) continue
         try {
-          const publicUrl = supabase.storage.from('personas-photos').getPublicUrl(p.foto_path).data.publicUrl
-          let chosen: string | null = null
-          try {
-            const res = await fetch(publicUrl, { method: 'GET', headers: { Range: 'bytes=0-0' } })
-            const ct = res.headers.get('content-type') || ''
-            if (res.ok && ct.startsWith('image')) chosen = publicUrl
-          } catch (err) {
-            // GET may fail due to CORS or private bucket; we'll try signed url below
+          const { data } = await supabase.storage
+            .from('personas-photos')
+            .createSignedUrl(p.foto_path, 3600)
+          
+          if (data?.signedUrl) {
+            p.foto_public_url = data.signedUrl
           }
-
-          if (!chosen) {
-            try {
-              const { data: signedData, error: signedErr } = await supabase.storage.from('personas-photos').createSignedUrl(p.foto_path, 3600) // Aumentamos el tiempo a 1 hora
-              if (!signedErr && (signedData as any)?.signedUrl) {
-                chosen = (signedData as any).signedUrl
-              } else if (signedErr) {
-                console.warn('Error getting signed URL:', signedErr)
-              }
-            } catch (e) {
-              console.warn('Exception getting signed URL:', e)
-            }
-          }
-
-          p.foto_public_url = chosen || null // Si no hay URL válida, no mostramos imagen
         } catch (e) {
-          console.warn('AlumnoList: error computing foto_public_url for', pid, e)
+          console.warn('Error getting photo URL:', e)
+          p.foto_public_url = null
         }
       }
-      const bMap: Record<string, any> = {}
-      ;(becasRes.data || []).forEach((b: any) => bMap[b.id] = b)
-      const tMap: Record<number, any> = {}
-      ;(turnosRes.data || []).forEach((t: any) => tMap[t.id] = t)
 
       setPersonasMap(pMap)
       setBecasMap(bMap)
