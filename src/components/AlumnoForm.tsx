@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface AlumnoFormProps {
@@ -29,6 +29,8 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
   })
 
   const isEditing = !!alumno
+  // Guardar el id original del alumno para usarlo en el WHERE del update
+  const originalIdRef = useRef<string | null>(null)
 
   const closeModal = () => {
     setIsOpen(false)
@@ -74,12 +76,14 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
 
   useEffect(() => {
     if (alumno) {
+      originalIdRef.current = alumno.id
       setFormData({
         id: alumno.id,
         id_turno: alumno.id_turno ?? null,
         activo: alumno.activo ?? true,
         fecha_inscripcion: alumno.fecha_inscripcion || new Date().toISOString().split('T')[0],
-        RUE: alumno.RUE ?? false,
+        // Normalizar RUE (en DB es text); convertir a boolean para el formulario
+        RUE: alumno.RUE === true || alumno.RUE === 'true' || alumno.RUE === 't' || alumno.RUE === '1',
         motivo_rue: alumno.motivo_rue || '',
         beca_id: alumno.beca_id || ''
       })
@@ -103,20 +107,27 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
 
     try {
       if (isEditing) {
-        const { data, error } = await supabase.from('alumnos').update({
-          id_turno: formData.id_turno || null,
-          activo: formData.activo,
-          fecha_inscripcion: formData.fecha_inscripcion,
-          RUE: formData.RUE,
-          motivo_rue: formData.motivo_rue || null,
-          beca_id: formData.beca_id || null
-        }).eq('id', formData.id)
+        const targetId = originalIdRef.current || formData.id
+        const { data, error } = await supabase
+          .from('alumnos')
+          .update({
+            id_turno: formData.id_turno || null,
+            activo: formData.activo,
+            fecha_inscripcion: formData.fecha_inscripcion,
+            // Guardar RUE como texto para coincidir con la columna text
+            RUE: formData.RUE ? 'true' : 'false',
+            motivo_rue: formData.motivo_rue || null,
+            beca_id: formData.beca_id || null
+          })
+          .eq('id', targetId)
+          .select('id')
 
         if (error) {
           console.error('Error al actualizar alumno:', error)
           alert('Error al actualizar alumno: ' + error.message)
+        } else if (!data || data.length === 0) {
+          alert('No se actualizó ningún registro. Verifica que no cambiaste la persona del alumno al editar.')
         } else {
-          // Notificar al padre que la actualización fue exitosa para que re-fetchee o actualice su estado
           onSuccess?.()
           onClose?.()
           setIsOpen(false)
@@ -127,7 +138,8 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
           id_turno: formData.id_turno || null,
           activo: formData.activo,
           fecha_inscripcion: formData.fecha_inscripcion || new Date().toISOString().split('T')[0],
-          RUE: formData.RUE,
+          // Guardar RUE como texto según el schema
+          RUE: formData.RUE ? 'true' : 'false',
           motivo_rue: formData.motivo_rue || null,
           beca_id: formData.beca_id || null,
         }])
@@ -162,10 +174,19 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Persona</label>
-                  <select className="mt-1 block w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 rounded-md" value={formData.id} onChange={(e) => setFormData({ ...formData, id: e.target.value })} required>
+                  <select
+                    className="mt-1 block w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-60"
+                    value={formData.id}
+                    onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                    disabled={isEditing}
+                    required
+                  >
                     <option value="">-- Selecciona persona --</option>
                     {personas.map(p => <option key={p.id} value={p.id}>{p.nombre_completo}</option>)}
                   </select>
+                  {isEditing && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">No se puede cambiar la persona al editar un alumno existente.</p>
+                  )}
 
                   {/* Vista previa de datos de la persona seleccionada */}
                   {formData.id && (

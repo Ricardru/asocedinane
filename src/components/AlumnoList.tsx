@@ -387,11 +387,18 @@ export function AlumnoList() {
                     setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: newStatus } : x))
 
                     try {
-                      const { data, error } = await supabase.from('alumnos').update({ activo: newStatus }).eq('id', a.id)
+                      const { data, error } = await supabase
+                        .from('alumnos')
+                        .update({ activo: newStatus })
+                        .eq('id', a.id)
+                        .select('id')
                       if (error) {
                         console.error('Error actualizando activo:', error)
                         alert('No se pudo actualizar el estado: ' + error.message)
                         // Revertir cambio optimista
+                        setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: a.activo } : x))
+                      } else if (!data || data.length === 0) {
+                        alert('No se actualizó ningún registro (puede que falten permisos o cambió el id).')
                         setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: a.activo } : x))
                       } else {
                         // Forzar refresh de datos relacionados si es necesario
