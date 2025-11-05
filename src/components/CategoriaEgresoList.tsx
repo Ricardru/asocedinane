@@ -447,7 +447,10 @@ export function CategoriaEgresoList({ categorias }: CategoriaEgresoListProps) {
 
       {/* Modal de edición */}
       {editingCategoria && (
-        <CategoriaEgresoForm />
+        <CategoriaEgresoForm 
+          categoria={editingCategoria}
+          onClose={() => setEditingCategoria(null)}
+        />
       )}
     </>
   )

@@ -452,7 +452,10 @@ export function CategoriaIngresoList({ categorias }: CategoriaIngresoListProps) 
 
       {/* Modal de edición */}
       {editingCategoria && (
-        <CategoriaIngresoForm />
+        <CategoriaIngresoForm 
+          categoria={editingCategoria}
+          onClose={() => setEditingCategoria(null)}
+        />
       )}
     </>
   )

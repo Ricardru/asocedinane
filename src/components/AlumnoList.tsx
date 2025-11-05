@@ -283,8 +283,39 @@ export function AlumnoList() {
           {filtered.map(a => (
             <div key={a.id} className="relative bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200">
               <div className="absolute bottom-3 right-3 flex space-x-2 z-10">
-                <button onClick={() => setViewingAlumno(a)} className="p-2 text-green-600">Ver</button>
-                <button onClick={() => setEditingAlumno(a)} className="p-2 text-blue-600">Editar</button>
+                <button 
+                  onClick={() => setViewingAlumno(a)} 
+                  className="p-2 text-green-600 hover:bg-green-100 rounded-full"
+                  title="Ver detalles"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={() => setEditingAlumno(a)} 
+                  className="p-2 text-blue-600 hover:bg-blue-100 rounded-full"
+                  title="Editar alumno"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (window.confirm('¿Estás seguro de que deseas inactivar este alumno?')) {
+                      await supabase.from('alumnos').update({ activo: false }).eq('id', a.id)
+                      fetchAlumnos()
+                    }
+                  }} 
+                  className="p-2 text-red-600 hover:bg-red-100 rounded-full"
+                  title="Inactivar alumno"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                  </svg>
+                </button>
               </div>
               <div className="flex items-start">
                 {personasMap[a.id]?.foto_public_url ? (
