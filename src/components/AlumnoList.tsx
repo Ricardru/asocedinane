@@ -377,15 +377,32 @@ export function AlumnoList() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </button>
-                <button 
+                <button
                   onClick={async () => {
                     const newStatus = !activoBool(a.activo);
                     const message = newStatus ? '¿Estás seguro de que deseas activar este alumno?' : '¿Estás seguro de que deseas inactivar este alumno?';
-                    if (window.confirm(message)) {
-                      await supabase.from('alumnos').update({ activo: newStatus }).eq('id', a.id)
-                      fetchAlumnos()
+                    if (!window.confirm(message)) return
+
+                    // Actualización optimista en UI
+                    setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: newStatus } : x))
+
+                    try {
+                      const { data, error } = await supabase.from('alumnos').update({ activo: newStatus }).eq('id', a.id)
+                      if (error) {
+                        console.error('Error actualizando activo:', error)
+                        alert('No se pudo actualizar el estado: ' + error.message)
+                        // Revertir cambio optimista
+                        setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: a.activo } : x))
+                      } else {
+                        // Forzar refresh de datos relacionados si es necesario
+                        fetchAlumnos()
+                      }
+                    } catch (err) {
+                      console.error('Exception updating activo:', err)
+                      alert('Ocurrió un error al actualizar el estado')
+                      setAlumnos(prev => prev.map(x => x.id === a.id ? { ...x, activo: a.activo } : x))
                     }
-                  }} 
+                  }}
                   className={`p-2 ${activoBool(a.activo) ? 'text-green-600 hover:bg-green-100' : 'text-red-600 hover:bg-red-100'} rounded-full`}
                   title={activoBool(a.activo) ? 'Alumno Activo - Click para Inactivar' : 'Alumno Inactivo - Click para Activar'}
                 >

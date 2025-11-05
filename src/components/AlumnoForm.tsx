@@ -33,7 +33,6 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
   const closeModal = () => {
     setIsOpen(false)
     onClose?.()
-    if (isEditing) onSuccess?.()
   }
 
   useEffect(() => {
@@ -104,7 +103,7 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
 
     try {
       if (isEditing) {
-        const { error } = await supabase.from('alumnos').update({
+        const { data, error } = await supabase.from('alumnos').update({
           id_turno: formData.id_turno || null,
           activo: formData.activo,
           fecha_inscripcion: formData.fecha_inscripcion,
@@ -113,8 +112,15 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
           beca_id: formData.beca_id || null
         }).eq('id', formData.id)
 
-        if (error) alert('Error al actualizar alumno: ' + error.message)
-        else closeModal()
+        if (error) {
+          console.error('Error al actualizar alumno:', error)
+          alert('Error al actualizar alumno: ' + error.message)
+        } else {
+          // Notificar al padre que la actualización fue exitosa para que re-fetchee o actualice su estado
+          onSuccess?.()
+          onClose?.()
+          setIsOpen(false)
+        }
       } else {
         const { error } = await supabase.from('alumnos').insert([{
           id: formData.id,
