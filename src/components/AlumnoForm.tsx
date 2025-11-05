@@ -100,8 +100,7 @@ export function AlumnoForm({ alumno, onSuccess, onClose, showButton = true, init
           fecha_inscripcion: formData.fecha_inscripcion,
           RUE: formData.RUE,
           motivo_rue: formData.motivo_rue || null,
-          beca_id: formData.beca_id || null,
-          beca_id: formData.beca_id || null,
+          beca_id: formData.beca_id || null
         }).eq('id', formData.id)
 
         if (error) alert('Error al actualizar alumno: ' + error.message)
