@@ -102,6 +102,12 @@ export default async function DashboardPage() {
         </div>
 
         <div>
+          <div className="bg-gray-800 p-4 rounded-lg shadow-md mb-6">
+            <h4 className="text-sm font-semibold text-gray-200 mb-2">Accesos rápidos</h4>
+            <div className="space-y-2">
+              <a href="/dashboard/usuarios" className="block w-full text-left bg-white/5 hover:bg-white/10 text-white py-2 px-3 rounded-md">Administrar Usuarios</a>
+            </div>
+          </div>
           <DonutChart labels={[ 'Nómina y Salarios','Adquisición de Insumos','Servicios Básicos','Mantenimiento IT' ]} values={[15000,5500,2000,3500]} />
 
           <DistributionCard turnos={turnoList} total={alumnosCount ?? 0} />

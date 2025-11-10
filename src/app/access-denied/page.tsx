@@ -49,12 +49,6 @@ export default function AccessDenied() {
             >
               Volver al Login
             </Link>
-            <Link
-              href="/"
-              className="block w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-            >
-              Ir al Inicio
-            </Link>
           </div>
         </div>
       </div>
