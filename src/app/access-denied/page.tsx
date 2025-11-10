@@ -1,6 +1,6 @@
 "use client"
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useUserRole } from '@/hooks/useUserRole'
 
 export default function AccessDenied() {
@@ -14,15 +14,20 @@ export default function AccessDenied() {
     )
   }
 
+  const router = useRouter()
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
           <p className="text-gray-300 mb-4">{error}</p>
-          <Link href="/login" className="text-blue-400 hover:text-blue-300">
+          <button
+            onClick={() => router.push('/login')}
+            className="text-blue-400 hover:text-blue-300"
+          >
             Volver al Login
-          </Link>
+          </button>
         </div>
       </div>
     )
@@ -43,12 +48,12 @@ export default function AccessDenied() {
             Este rol no tiene un dashboard asignado. Contacte al administrador para más información.
           </p>
           <div className="space-y-2">
-            <Link
-              href="/login"
+            <button
+              onClick={() => router.push('/login')}
               className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
             >
               Volver al Login
-            </Link>
+            </button>
           </div>
         </div>
       </div>
