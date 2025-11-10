@@ -56,17 +56,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <a href="/dashboard" className="inline-flex items-center text-white">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9.75L12 4l9 5.75V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V9.75z" />
-          </svg>
-          <span className="ml-2 font-semibold text-white">Panel</span>
-        </a>
-        <div className="text-sm text-gray-400">Accesos rápidos</div>
-      </div>
-
-      <h1 className="text-4xl font-bold text-white mb-4">Bienvenido al Panel de Control</h1>
+      <h1 className="text-4xl font-bold text-white mb-4">Panel de Control Total</h1>
       <p className="text-lg text-gray-300 mb-6">Resumen operativo basado en datos reales.</p>
 
       <KpiGrid alumnos={alumnosCount ?? 0} clientes={clientesCount ?? 0} proveedores={proveedoresCount ?? 0} />
