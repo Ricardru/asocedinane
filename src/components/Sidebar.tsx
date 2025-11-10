@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { LogoutButton } from '@/components/LogoutButton'
 import { UserProfile } from '@/components/UserProfile'
+import { useUserRole } from '@/hooks/useUserRole'
 
 interface SidebarProps {
   children: React.ReactNode
@@ -11,6 +12,7 @@ interface SidebarProps {
 export default function Sidebar({ children }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { role, loading } = useUserRole()
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -244,20 +246,22 @@ export default function Sidebar({ children }: SidebarProps) {
                     {!isCollapsed && <span className="ml-3">Becas</span>}
                   </a>
                 </li>
-                <li>
-                  <a
-                    href="/dashboard/responsables-alumnos"
-                    className={`flex items-center px-4 py-2 text-[#F8F8F9] hover:bg-[#00FFFF] hover:text-[#01257D] rounded-lg transition-colors ${
-                      isCollapsed ? 'justify-center' : ''
-                    }`}
-                    title={isCollapsed ? 'Responsables de Alumnos' : ''}
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z" />
-                    </svg>
-                    {!isCollapsed && <span className="ml-3">Responsables de Alumnos</span>}
-                  </a>
-                </li>
+                {role === 'admin' && (
+                  <li>
+                    <a
+                      href="/dashboard/responsables-alumnos"
+                      className={`flex items-center px-4 py-2 text-[#F8F8F9] hover:bg-[#00FFFF] hover:text-[#01257D] rounded-lg transition-colors ${
+                        isCollapsed ? 'justify-center' : ''
+                      }`}
+                      title={isCollapsed ? 'Responsables de Alumnos' : ''}
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 1.79-8 4v1h16v-1c0-2.21-3.582-4-8-4z" />
+                      </svg>
+                      {!isCollapsed && <span className="ml-3">Responsables de Alumnos</span>}
+                    </a>
+                  </li>
+                )}
                 <li>
                   <a
                     href="/dashboard/turnos"
