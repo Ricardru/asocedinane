@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useUserRole } from '@/hooks/useUserRole'
+import { supabase } from '@/lib/supabase'
 
 export default function AccessDenied() {
   const { role, loading, error } = useUserRole()
@@ -49,7 +50,15 @@ export default function AccessDenied() {
           </p>
           <div className="space-y-2">
             <button
-              onClick={() => router.push('/login')}
+              onClick={async () => {
+                // cerrar sesión antes de redirigir
+                try {
+                  await supabase.auth.signOut()
+                } catch (e) {
+                  console.error('Error signing out:', e)
+                }
+                router.push('/login')
+              }}
               className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
             >
               Volver al Login
