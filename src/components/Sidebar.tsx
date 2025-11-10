@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { LogoutButton } from '@/components/LogoutButton'
 import { UserProfile } from '@/components/UserProfile'
+import UserMenu from '@/components/UserMenu'
 import { useUserRole } from '@/hooks/useUserRole'
 
 interface SidebarProps {
@@ -397,7 +398,8 @@ export default function Sidebar({ children }: SidebarProps) {
         {/* Home button removed to avoid accidental redirections */}
 
         {/* Logout Button - Always Visible */}
-  <div className="fixed top-4 right-4 z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+  <div className="fixed top-4 right-4 z-50 bg-gray-800 rounded-lg shadow-lg border border-gray-700 flex items-center">
+          <UserMenu />
           <LogoutButton />
         </div>
         {children}
