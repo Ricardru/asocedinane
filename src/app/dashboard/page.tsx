@@ -16,6 +16,15 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Obtener nombre completo del usuario desde la tabla usuarios
+  const nombreRes = await supabase
+    .from('usuarios')
+    .select('nombre_completo')
+    .eq('id', user.id)
+    .single()
+
+  const nombreCompleto = nombreRes.data?.nombre_completo ?? user.email ?? 'Usuario'
+
   // Conteos básicos
   const alumnosRes = await supabase.from('alumnos').select('id, id_turno', { count: 'exact' })
   const alumnosRows = alumnosRes.data || []
@@ -56,7 +65,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-4xl font-bold text-white mb-4">Panel de Control Total</h1>
+  <h1 className="text-4xl font-bold text-white mb-4">Bienvenido {nombreCompleto} al Panel de Control Total</h1>
       <p className="text-lg text-gray-300 mb-6">Resumen operativo basado en datos reales.</p>
 
       <KpiGrid alumnos={alumnosCount ?? 0} clientes={clientesCount ?? 0} proveedores={proveedoresCount ?? 0} />
