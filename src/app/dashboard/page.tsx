@@ -25,6 +25,19 @@ export default async function DashboardPage() {
 
   const nombreCompleto = nombreRes.data?.nombre_completo ?? user.email ?? 'Usuario'
 
+  // Verificar el rol del usuario y restringir acceso al dashboard (solo admin)
+  const rolRes = await supabase
+    .from('usuarios')
+    .select('rol')
+    .eq('id', user.id)
+    .single()
+
+  const rol = rolRes.data?.rol
+  if (rolRes.error || rol !== 'admin') {
+    // Redirigir a access-denied si no es admin
+    redirect('/access-denied')
+  }
+
   // Conteos básicos
   const alumnosRes = await supabase.from('alumnos').select('id, id_turno', { count: 'exact' })
   const alumnosRows = alumnosRes.data || []
